@@ -1,0 +1,10 @@
+name: npm-centrality
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.8
+  - requests
+  - beautifulsoup4
+  - networkx
+  - matplotlib
