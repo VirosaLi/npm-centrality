@@ -8,3 +8,7 @@ dependencies:
   - beautifulsoup4
   - networkx
   - matplotlib
+  - black
+  - pip
+  - pip:
+      - PyGithub
