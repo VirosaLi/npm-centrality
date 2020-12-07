@@ -88,7 +88,7 @@ def import_packages_recursive(name, deps_dict, max_depth=10, depth=0):
         logging.debug(name)
         return
 
-    soup = BeautifulSoup(page.content, 'html.parser')
+    soup = BeautifulSoup(page.content, "html.parser")
 
     # parse number of dependencies
     tags = soup.find_all("span", class_="c3fc8940")
@@ -105,7 +105,7 @@ def import_packages_recursive(name, deps_dict, max_depth=10, depth=0):
     dependencies_list = [dep.text for dep in dependencies]
 
     if num_dependency != len(dependencies_list):
-        print(f'request package {name} failed')
+        print(f"request package {name} failed")
         print(num_dependency, len(dependencies_list))
 
     # print(f'package {name} has dependencies {dependencies_list}')
