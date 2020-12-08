@@ -79,7 +79,7 @@ def import_packages_recursive(name, deps_dict, max_depth=10, depth=0):
         page = requests.get(
             url="https://app.scrapingbee.com/api/v1/",
             params={
-                "api_key": "W89DTQW6MCTY0F94F6BYTC7OZ564UQRQV5SUJM75NIUN7WUK69AIUG1H4POV2IO8OBPI159AOES9K4P9",
+                "api_key": "key",
                 "url": url,
                 "premium_proxy": "true",
             },
