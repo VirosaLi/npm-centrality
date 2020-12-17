@@ -10,8 +10,11 @@ dependencies:
   - matplotlib
   - numpy
   - pandas
+  - tqdm
   - notebook
   - black
+  - isort
   - pip
   - pip:
       - PyGithub
+      - pygount

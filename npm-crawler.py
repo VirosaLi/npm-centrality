@@ -1,11 +1,11 @@
-from json import load, dump
-from math import ceil
 import logging
+from json import dump, load
+from math import ceil
 
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
 from requests.exceptions import ConnectionError
-
+from tqdm import tqdm
 
 package_per_page = 36
 dep_selector = "#dependencies > ul:nth-child(2) > li > a"
@@ -79,7 +79,7 @@ def import_packages_recursive(name, deps_dict, max_depth=10, depth=0):
         page = requests.get(
             url="https://app.scrapingbee.com/api/v1/",
             params={
-                "api_key": "key",
+                "api_key": "W89DTQW6MCTY0F94F6BYTC7OZ564UQRQV5SUJM75NIUN7WUK69AIUG1H4POV2IO8OBPI159AOES9K4P9",
                 "url": url,
                 "premium_proxy": "true",
             },
@@ -117,7 +117,87 @@ def import_packages_recursive(name, deps_dict, max_depth=10, depth=0):
         import_packages_recursive(dep, deps_dict, max_depth=max_depth, depth=depth + 1)
 
 
-#
+def get_repo_url():
+    with open("data/wallet_complete_with_failed.json", "r") as file:
+        data = load(file)
+
+    url_dict = {}
+    for package, _ in tqdm(data.items()):
+        url = npm_package_format(package)
+        try:
+            page = requests.get(
+                url="https://app.scrapingbee.com/api/v1/",
+                params={
+                    "api_key": "W89DTQW6MCTY0F94F6BYTC7OZ564UQRQV5SUJM75NIUN7WUK69AIUG1H4POV2IO8OBPI159AOES9K4P9",
+                    "url": url,
+                    "premium_proxy": "true",
+                },
+            )
+        except ConnectionError:
+            logging.debug(package)
+            print(f"fetch {package} failed")
+            return
+
+        soup = BeautifulSoup(page.content, "html.parser")
+        for tag in soup.find_all(
+            "a",
+            class_="b2812e30 f2874b88 fw6 mb3 mt2 truncate black-80 f4 link",
+            href=True,
+        ):
+            if "github" in tag["href"]:
+                url_dict[package] = tag["href"].replace("#readme", "")
+                break
+        if package not in url_dict:
+            print(package)
+    return url_dict
+
+
+def get_deps():
+    with open("data/wallet.json") as file:
+        data = load(file)
+
+    counter = 0
+    result = {}
+    for _, dep_list in data.items():
+        for dependency in dep_list:
+            import_packages_recursive(dependency, result)
+        counter += 1
+        print(f"{counter} packages have finished, {len(data)} total.")
+
+    with open(f"data/wallet_complete.json", "w") as file:
+        dump(result, file, indent=4)
+
+
+def fetch_missing_dep():
+    failed_package = "@oclif/plugin-help"
+    result = {}
+    import_packages_recursive(failed_package, result)
+
+    with open("data/wallet_complete.json") as file:
+        data = load(file)
+
+    data.update(result)
+
+    with open(f"data/wallet_complete_with_failed.json", "w") as file:
+        dump(data, file, indent=4)
+
+
+def get_urls():
+    urls = get_repo_url()
+    with open("data/wallet_url.json", "w") as file:
+        dump(urls, file, indent=4)
+
+
+def clean_urls():
+    with open("data/wallet_url.json") as file:
+        data = load(file)
+    for package, url in data.items():
+        data[package] = url.replace("#readme", "")
+    with open("data/wallet_url.json", "w") as file:
+        dump(data, file, indent=4)
+
+
+get_urls()
 
 # # num_package = 100
 # # package_list = npm_get_most_depended_upon_packages(num_package)
@@ -130,35 +210,6 @@ def import_packages_recursive(name, deps_dict, max_depth=10, depth=0):
 # print(deps_list)
 # print(len(deps_list))
 
-# tmp_package = "@oclif/plugin-help"
 # result = {}
 # import_packages_recursive(tmp_package, result)
 # print(result)
-
-# @oclif/plugin-help
-
-# with open("data/wallet.json") as file:
-#     data = load(file)
-#
-# counter = 0
-# result = {}
-# for _, dep_list in data.items():
-#     for dependency in dep_list:
-#         import_packages_recursive(dependency, result)
-#     counter += 1
-#     print(f'{counter} packages have finished, {len(data)} total.')
-#
-# with open(f"data/wallet_complete.json", "w") as file:
-#     dump(result, file, indent=4)
-
-failed_package = "@oclif/plugin-help"
-result = {}
-import_packages_recursive(failed_package, result)
-
-with open("data/wallet_complete.json") as file:
-    data = load(file)
-
-data.update(result)
-
-with open(f"data/wallet_complete_with_failed.json", "w") as file:
-    dump(data, file, indent=4)
