@@ -126,7 +126,7 @@ def get_repo_url():
         url = npm_package_format(package)
         try:
             page = requests.get(
-                url="https://app.scrapingbee.com/api/v1/",
+                url="https://app.scrapingbee.com/api/v1/ ",
                 params={
                     "api_key": "W89DTQW6MCTY0F94F6BYTC7OZ564UQRQV5SUJM75NIUN7WUK69AIUG1H4POV2IO8OBPI159AOES9K4P9",
                     "url": url,
@@ -136,7 +136,7 @@ def get_repo_url():
         except ConnectionError:
             logging.debug(package)
             print(f"fetch {package} failed")
-            return
+            continue
 
         soup = BeautifulSoup(page.content, "html.parser")
         for tag in soup.find_all(
@@ -148,7 +148,7 @@ def get_repo_url():
                 url_dict[package] = tag["href"].replace("#readme", "")
                 break
         if package not in url_dict:
-            print(package)
+            print("failed", package)
     return url_dict
 
 
@@ -188,6 +188,47 @@ def get_urls():
         dump(urls, file, indent=4)
 
 
+def fetch_missing_url():
+    with open("../data/wallet_url.json", "r") as file:
+        urls = load(file)
+
+    with open("data/wallet_complete_with_failed.json", "r") as file:
+        data = load(file)
+
+    while len(urls) != len(data):
+        for package, _ in tqdm(data.items()):
+            if package in urls:
+                continue
+
+            url = npm_package_format(package)
+            try:
+                page = requests.get(
+                    url="https://app.scrapingbee.com/api/v1/ ",
+                    params={
+                        "api_key": "W89DTQW6MCTY0F94F6BYTC7OZ564UQRQV5SUJM75NIUN7WUK69AIUG1H4POV2IO8OBPI159AOES9K4P9",
+                        "url": url,
+                        "premium_proxy": "true",
+                    },
+                )
+            except ConnectionError:
+                logging.debug(package)
+                print(f"fetch {package} failed")
+                continue
+
+            soup = BeautifulSoup(page.content, "html.parser")
+            for tag in soup.find_all(
+                    "a",
+                    class_="b2812e30 f2874b88 fw6 mb3 mt2 truncate black-80 f4 link",
+                    href=True,
+            ):
+                if "github" in tag["href"]:
+                    urls[package] = tag["href"].replace("#readme", "")
+                    break
+
+    with open("data/wallet_url_complete.json", "w") as file:
+        dump(urls, file, indent=4)
+
+
 def clean_urls():
     with open("data/wallet_url.json") as file:
         data = load(file)
@@ -197,7 +238,7 @@ def clean_urls():
         dump(data, file, indent=4)
 
 
-get_urls()
+fetch_missing_url()
 
 # # num_package = 100
 # # package_list = npm_get_most_depended_upon_packages(num_package)
