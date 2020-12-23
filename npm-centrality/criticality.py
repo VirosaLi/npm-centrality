@@ -5,7 +5,7 @@ from json import loads, load, dump
 from tqdm import tqdm
 
 
-environ["GITHUB_AUTH_TOKEN"] = "07eead74522bd1a53f39172d2d11b8ccab847058"
+environ["GITHUB_AUTH_TOKEN"] = "token"
 
 with open("../data/wallet_url_improved.json", "r") as file:
     urls = load(file)
