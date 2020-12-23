@@ -1,6 +1,7 @@
 import logging
 from json import dump, load
 from math import ceil
+from time import sleep
 
 import requests
 from bs4 import BeautifulSoup
@@ -189,43 +190,49 @@ def get_urls():
 
 
 def fetch_missing_url():
-    with open("../data/wallet_url.json", "r") as file:
+    with open("data/wallet_url.json", "r") as file:
         urls = load(file)
 
     with open("data/wallet_complete_with_failed.json", "r") as file:
         data = load(file)
 
-    while len(urls) != len(data):
-        for package, _ in tqdm(data.items()):
-            if package in urls:
-                continue
+    try:
+        while len(urls) != len(data):
+            print(f'{len(urls)}/{len(data)}')
+            sleep(5)
 
-            url = npm_package_format(package)
-            try:
-                page = requests.get(
-                    url="https://app.scrapingbee.com/api/v1/ ",
-                    params={
-                        "api_key": "W89DTQW6MCTY0F94F6BYTC7OZ564UQRQV5SUJM75NIUN7WUK69AIUG1H4POV2IO8OBPI159AOES9K4P9",
-                        "url": url,
-                        "premium_proxy": "true",
-                    },
-                )
-            except ConnectionError:
-                logging.debug(package)
-                print(f"fetch {package} failed")
-                continue
+            for package, _ in tqdm(data.items()):
+                if package in urls:
+                    continue
 
-            soup = BeautifulSoup(page.content, "html.parser")
-            for tag in soup.find_all(
-                    "a",
-                    class_="b2812e30 f2874b88 fw6 mb3 mt2 truncate black-80 f4 link",
-                    href=True,
-            ):
-                if "github" in tag["href"]:
-                    urls[package] = tag["href"].replace("#readme", "")
-                    break
+                url = npm_package_format(package)
+                try:
+                    page = requests.get(url)
+                    # page = requests.get(
+                    #     url="https://app.scrapingbee.com/api/v1/ ",
+                    #     params={
+                    #         "api_key": "W89DTQW6MCTY0F94F6 BYTC7OZ564UQRQV5SUJM75NIUN7WUK69AIUG1H4POV2IO8OBPI159AOES9K4P9",
+                    #         "url": url,
+                    #         "premium_proxy": "true",
+                    #     },
+                    # )
+                except ConnectionError:
+                    continue
 
-    with open("data/wallet_url_complete.json", "w") as file:
+                soup = BeautifulSoup(page.content, "html.parser")
+                for tag in soup.find_all(
+                        "a",
+                        class_="b2812e30 f2874b88 fw6 mb3 mt2 truncate black-80 f4 link",
+                        href=True,
+                ):
+                    if "github" in tag["href"]:
+                        urls[package] = tag["href"].replace("#readme", "")
+                        break
+    except KeyboardInterrupt:
+        with open("data/wallet_url_improved.json", "w") as file:
+            dump(urls, file, indent=4)
+
+    with open("data/wallet_url_improved.json", "w") as file:
         dump(urls, file, indent=4)
 
 

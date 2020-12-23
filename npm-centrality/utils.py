@@ -1,9 +1,12 @@
-from json import load
+from json import load, dump
 
 from matplotlib import pyplot as plt
 import numpy as np
 import networkx as nx
 from networkx.algorithms import betweenness_centrality
+from tqdm import tqdm
+
+from criticality import fetch_criticality
 
 
 def build_graph_from_dict(data_dict):
@@ -21,27 +24,42 @@ def seq_to_dist(sequence):
     return counts_map[:, 1] / np.sum(counts_map[:, 1])
 
 
-if __name__ == '__main__':
-    with open("../data/wallet_url.json", "r") as file:
+def build_complete_graph():
+    with open("../data/wallet_complete_with_failed.json", "r") as file:
         data = load(file)
 
-    print(len(data))
+    dep_graph = build_graph_from_dict(data)
 
-    # with open("../data/wallet_complete_with_failed.json", "r") as file:
-    #     data = load(file)
-    #
-    # dep_graph = build_graph_from_dict(data)
-    #
-    # with open("../data/wallet.json", "r") as file:
-    #     data = load(file)
-    #
-    # print(len(data))
-    # for package, deps in data.items():
-    #     dep_graph.add_node(package)
-    #     for dep in deps:
-    #         dep_graph.add_edge(package, dep)
-    #
-    # dep_graph.remove_node("blockchain/unused-My-Wallet")
+    with open("../data/wallet.json", "r") as file:
+        data = load(file)
+
+    for package, deps in data.items():
+        dep_graph.add_node(package)
+        for dep in deps:
+            dep_graph.add_edge(package, dep)
+
+    dep_graph.remove_node("blockchain/unused-My-Wallet")
+    return dep_graph
+
+
+if __name__ == "__main__":
+    graph = build_complete_graph()
+
+    betw = betweenness_centrality(graph)
+    betw = sorted(betw.items(), key=lambda x: x[1], reverse=True)
+
+    with open("../data/wallet_url_improved.json", "r") as file:
+        urls = load(file)
+
+    results = []
+    for package, betw_score in tqdm(betw[100:200]):
+        cs = 0 if package not in urls else fetch_criticality(package)
+        results.append({"name": package, "betw": betw_score, "cs": cs})
+
+    with open("../data/wallet_criticality_100-200.json", "w") as file:
+        dump(results, file, indent=4)
+
+    # nx.write_gml(dep_graph, "../data/dep_graph.gml")
 
     # print(dep_graph.number_of_nodes())
     # print(nx.number_weakly_connected_components(dep_graph))

@@ -6,6 +6,7 @@ dependencies:
   - python=3.8
   - requests
   - beautifulsoup4
+  - scipy
   - networkx
   - matplotlib
   - numpy
@@ -18,3 +19,4 @@ dependencies:
   - pip:
       - PyGithub
       - pygount
+      - criticality-score
